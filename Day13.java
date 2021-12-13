@@ -13,23 +13,26 @@ public class Day13 {
         List<String> strings = Files.readAllLines(Paths.get("day13.txt"));
 
         boolean instr = false;
+        boolean first = true;
         Set<Point> points = new HashSet<>();
         for (String string : strings) {
             if (string.isBlank()) {
                 instr = true;
-                System.out.println(points.size());
                 continue;
             }
             if (!instr) {
                 String[] split = string.split(",");
                 points.add(new Point(Integer.parseInt(split[0]), Integer.parseInt(split[1])));
             } else {
-
                 if (string.startsWith("fold along x=")) {
                     points = foldx(points, Integer.parseInt(string.substring(13)));
                 }
                 if (string.startsWith("fold along y=")) {
                     points = foldy(points, Integer.parseInt(string.substring(13)));
+                }
+                if (first) {
+                    System.out.println(points.size());
+                    first = false;
                 }
             }
         }
