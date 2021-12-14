@@ -46,6 +46,7 @@ public class Day14 {
         }
 
         Map<String, Long> freq = new HashMap<>();
+        freq.put(input.substring(input.length()-1), 1L);
         counts.forEach((k, v) -> {
             String c0 = k.substring(0, 1);
             freq.put(c0, freq.getOrDefault(c0, 0L) + v);
