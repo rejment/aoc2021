@@ -9,31 +9,44 @@ public class Day23 {
     static final int[] cost = {1, 10, 100, 1000};
     static final int[] home = {3, 5, 7, 9};
     static final int[] safe = {1, 2, 4, 6, 8, 10, 11};
+    static final int[] safe_r = {11, 10, 8, 6, 4, 2, 1};
     static int maxy;
-    
-    record Bot(int id, int c, int x, int y) {
+
+    record Bot(int c, int x, int y) {
         void moves(List<Bot> all, Consumer<Bot> cb) {
             if (y == 1) {
                 int l = Math.min(x, home[c]);
                 int r = Math.max(x, home[c]);
-                if (all.stream().anyMatch(a -> a.id != id && a.y == 1 && l < a.x && a.x < r))
-                    return;
-                if (all.stream().anyMatch(a -> a.id != id && a.y > 1 && a.x == home[c] && a.c != c))
-                    return;
-
-                cb.accept(new Bot(id, c, home[c], maxy - (int) all.stream().filter(a -> a.x == home[c]).count()));
+                int count = 0;
+                for (Bot a : all) {
+                    if (a != this && a.y == 1 && l < a.x && a.x < r) return;
+                    if (a != this && a.y > 1 && a.x == home[c] && a.c != c) return;
+                    if (a.x == home[c]) count++;
+                }
+                cb.accept(new Bot(c, home[c], maxy - count));
             } else {
-                if (home[c] == x && all.stream().filter(a -> a.x == x && a.c == c && a.y > y).count() == (maxy - y))
-                    return;
-                if (all.stream().anyMatch(a -> a.id != id && a.x == x && a.y == y - 1))
-                    return;
+                int count = 0;
+                Set<Integer> blocked = new HashSet<>();
+                for (Bot a : all) {
+                    if (a != this && a.x == x && a.y == y - 1) return;
+                    if (a.x == x && a.c == c && a.y > y) count++;
+                    if (a.y == 1) blocked.add(a.x);
+                }
+                if (home[c] == x && count == (maxy - y)) return;
 
                 for (int s : safe) {
-                    if (s < x && all.stream().noneMatch(a -> a.id != id && a.y == 1 && a.x < x && a.x >= s))
-                        cb.accept(new Bot(id, c, s, 1));
-                    if (s > x && all.stream().noneMatch(a -> a.id != id && a.y == 1 && a.x > x && a.x <= s))
-                        cb.accept(new Bot(id, c, s, 1));
+                    if (s > x) {
+                        if (blocked.contains(s)) break;
+                        cb.accept(new Bot(c, s, 1));
+                    }
                 }
+                for (int s : safe_r) {
+                    if (s < x) {
+                        if (blocked.contains(s)) break;
+                        cb.accept(new Bot(c, s, 1));
+                    }
+                }
+
             }
         }
     }
@@ -52,7 +65,10 @@ public class Day23 {
         }
 
         boolean done() {
-            return bots.stream().allMatch(b -> b.y > 1 && b.x == home[b.c]);
+            for (Bot b : bots) {
+                if (b.y <= 1 || b.x != home[b.c]) return false;
+            }
+            return true;
         }
     }
 
@@ -71,12 +87,12 @@ public class Day23 {
             for (int x = 0; x < line.length(); x++) {
                 char c = line.charAt(x);
                 if (Character.isLetter(c)) {
-                    bots.add(new Bot((y * 100 + x), c - 'A', x, y));
+                    bots.add(new Bot(c - 'A', x, y));
                 }
             }
         }
         maxy = bots.stream().mapToInt(Bot::y).max().orElse(0);
-        PriorityQueue<State> pq = new PriorityQueue<>(Comparator.comparingInt(state -> state.score + state.bots.stream().mapToInt(a -> cost[a.c] * Math.abs(a.x - home[a.c])).sum()));
+        PriorityQueue<State> pq = new PriorityQueue<>(Comparator.comparingInt(State::score));
         Set<State> seen = new HashSet<>();
         pq.add(new State(bots, 0));
         while (!pq.isEmpty()) {
